@@ -4,6 +4,7 @@ import pika
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.exceptions import AMQPError
 from schemas import MessageCreateRequest, MessageResponse
+from utility.db_connection import db
 
 app = FastAPI()
 
@@ -44,7 +45,7 @@ def root():
 # 리턴 상태 코드를 바꾸고 싶으면 데코레이터에 씀. status_code=...
 # 에러를 반환할 때는 return 보다 HTTPException을 많이 씀
 @app.post("/messages", response_model=MessageResponse)
-def publish_messages(message: MessageCreateRequest, channel: Annotated[BlockingChannel, Depends(get_channel)]):
+async def publish_messages(message: MessageCreateRequest, channel: Annotated[BlockingChannel, Depends(get_channel)]):
     try:
         channel.queue_declare(queue="message_queue")
 
@@ -60,4 +61,10 @@ def publish_messages(message: MessageCreateRequest, channel: Annotated[BlockingC
         ) from e # 예외 체이닝. 사용자에게는 503을 응답하지만, 서버 로그나 traceback에는
                     # 원래 원인인 AMQPError도 같이 남음
 
+    try:
+        pass
+        # await db.users.insert_one({"s": "kim"})
+        # doc = await db.users.find_one({"name": "kim"})
+    except Exception as e:
+        pass
     return MessageResponse(message=message.message)

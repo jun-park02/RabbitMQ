@@ -1,0 +1,25 @@
+services:
+  web:
+    image: rabbitmq:3.4.0-management
+    restart: unless-stopped
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user  
+      RABBITMQ_DEFAULT_PASS: "Jksy2828!!"
+
+  mongodb:
+      image: mongodb/mongodb-community-server:8.2.9-ubuntu2204-slim
+      container_name: mongodb
+      restart: unless-stopped
+      ports:
+        - "27017:27017"
+      environment:
+        MONGODB_INITDB_ROOT_USERNAME: root
+        MONGODB_INITDB_ROOT_PASSWORD: "Jksy2828!!"
+      volumes:
+        - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
