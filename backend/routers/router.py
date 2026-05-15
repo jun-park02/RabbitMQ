@@ -1,51 +1,38 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from schemas import MessageCreateRequest, MessageResponse
 from typing import Annotated
-import pika
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.exceptions import AMQPError
-from schemas import MessageCreateRequest, MessageResponse
-from utility.db_connection import db
+from utility.util import get_channel
+from uuid import uuid4, UUID
+from datetime import datetime, timezone
+from utility.util import messages_collection
 
-app = FastAPI()
+router = APIRouter()
 
-def get_channel():
-    try:
-        connection = None
-        channel = None
+async def save_message(sender_id: str, receiver_id: str, content: str) -> dict:
+    document = {
+        "_id": str(uuid4()), # _id는 각 document의 기본 고유 식별자 필드
+        "sender_id": sender_id,
+        "receiver_id": receiver_id,
+        "content": content,
+        "created_at": datetime.now(timezone.utc),
+    }
 
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host="localhost")
-        )
+    await messages_collection.insert_one(document)
 
-        channel = connection.channel()
-
-        if channel.is_closed:
-            raise HTTPException(
-                status_code=503,
-                detail="Message broker channel is closed"
-            )
-        yield channel
-    except AMQPError as e:
-         raise HTTPException(
-              status_code=503,
-              detail="Failed to connect to message broker"
-         ) from e
-    finally:
-        if channel is not None and channel.is_open:
-            channel.close()
-        if connection is not None and connection.is_open:
-            connection.close()
-
-
-@app.get("/")
-def root():
-    return "Hello World"
+    return document
 
 
 # 리턴 상태 코드를 바꾸고 싶으면 데코레이터에 씀. status_code=...
 # 에러를 반환할 때는 return 보다 HTTPException을 많이 씀
-@app.post("/messages", response_model=MessageResponse)
+@router.post("/messages", response_model=MessageResponse)
 async def publish_messages(message: MessageCreateRequest, channel: Annotated[BlockingChannel, Depends(get_channel)]):
+    saved_message = await save_message(
+        sender_id=message.sender_id
+    )
+
+
     try:
         channel.queue_declare(queue="message_queue")
 
