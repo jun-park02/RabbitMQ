@@ -1,26 +1,38 @@
 from fastapi import HTTPException
 from pymongo import AsyncMongoClient
-from pika.exceptions import AMQPError
-import pika
+from aio_pika.exceptions import CONNECTION_EXCEPTIONS
+from dotenv import load_dotenv
+import aio_pika
+import os
+
+load_dotenv()
+
+MONGO_ID = os.getenv("MONGODB_INITDB_ROOT_USERNAME")
+MONGO_PASSWORD = os.getenv("MONGODB_INITDB_ROOT_PASSWORD")
 
 # 참고
 # chat_app이 DB이름
 # messages가 collection 이름
 # document -> JSON 같은 데이터 1개
-client = AsyncMongoClient("mongodb://localhost:27017")
+client = AsyncMongoClient(f"mongodb://{MONGO_ID}:{MONGO_PASSWORD}@localhost:27017/?authSource=admin")
 db = client["chat_app"]
 messages_collection = db["messages"]
 
-def get_channel():
+async def get_channel():
+    connection = None
+    channel = None
     try:
-        connection = None
-        channel = None
+        RABBITMQ_USER = os.getenv("RABBITMQ_DEFAULT_USER")
+        RABBITMQ_PASSWORD = os.getenv("RABBITMQ_DEFAULT_PASS")
 
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host="localhost")
+        connection = await aio_pika.connect_robust(
+            host="localhost",
+            port=5672,
+            login=RABBITMQ_USER,
+            password=RABBITMQ_PASSWORD
         )
 
-        channel = connection.channel()
+        channel = await connection.channel()
 
         if channel.is_closed:
             raise HTTPException(
@@ -28,13 +40,13 @@ def get_channel():
                 detail="Message broker channel is closed"
             )
         yield channel
-    except AMQPError as e:
-         raise HTTPException(
-              status_code=503,
-              detail="Failed to connect to message broker"
-         ) from e
+    except CONNECTION_EXCEPTIONS as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Failed to connect to message broker"
+        ) from e
     finally:
-        if channel is not None and channel.is_open:
-            channel.close()
-        if connection is not None and connection.is_open:
-            connection.close()
+        if channel is not None and not channel.is_closed:
+            await channel.close()
+        if connection is not None and not connection.is_closed:
+            await connection.close()

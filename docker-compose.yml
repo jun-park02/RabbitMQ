@@ -1,6 +1,6 @@
 services:
   web:
-    image: rabbitmq:3.4.0-management
+    image: rabbitmq:4.3.0-management
     restart: unless-stopped
     ports:
       - "15672:15672"
@@ -10,7 +10,7 @@ services:
       RABBITMQ_DEFAULT_PASS: "Jksy2828!!"
 
   mongodb:
-      image: mongodb/mongodb-community-server:8.2.9-ubuntu2204-slim
+      image: "mongodb/mongodb-community-server:8.2.9-ubuntu2204-slim"
       container_name: mongodb
       restart: unless-stopped
       ports:
