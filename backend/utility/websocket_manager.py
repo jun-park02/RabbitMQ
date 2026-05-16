@@ -2,12 +2,13 @@ from fastapi import WebSocket
 
 class ConnectionManager:
     def __init__(self):
-        # user_id -> WebSocket 목록
-        # 한 사용자가 여러 기기에서 접속할 수 있으니 list로 관리
+        # key: user_id
+        # value: WebSocket list
         self.active_connections: dict[str, list[WebSocket]] = {}
 
     async def connect(self, user_id: str, websocket: WebSocket):
-        await websocket.accept() # 클라이언트의 접속 요청 허용
+        # 클라이언트의 접속 요청 허용
+        await websocket.accept() 
 
         if user_id not in self.active_connections:
             self.active_connections[user_id] = []
@@ -35,7 +36,6 @@ class ConnectionManager:
         if not connections:
             return False
         
-        # ?
         disconnected = []
 
         for websocket in connections:
@@ -51,7 +51,6 @@ class ConnectionManager:
         
         return len(disconnected) < len(connections)
     
-# 이건 왜 이렇게 만드는거지
 manager = ConnectionManager()
 
 
