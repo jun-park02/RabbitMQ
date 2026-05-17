@@ -1,17 +1,27 @@
-from dotenv import load_dotenv
 import pika
 import os
 import sys
+import requests
 
-load_dotenv()
+def send_pushover_notification(message):
+    token = os.getenv("PUSHOVER_TOKEN")
+    user = os.getenv("PUSHOVER_USER")
+    url = "https://api.pushover.net/1/messages.json"
+    data = {
+        "token": token,
+        "user": user,
+        "message": message
+    }
+
+    requests.post(url, data)
+
 
 def callback(ch, method, properties, body):
     message = body.decode()
 
     print(f"[RabbitMQ Container Received] : {message}")
 
-    # 여기에 로직 넣고
-    pass
+    send_pushover_notification(message)
 
     # 처리 완료 ACK
     ch.basic_ack(delivery_tag=method.delivery_tag)

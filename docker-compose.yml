@@ -1,6 +1,12 @@
 services:
   rabbitmq:
     image: rabbitmq:4.3.0-management
+    healthcheck:
+      # 이 명령이 성공 -> docker가 이 컨테이너를 healthy 상태로 봄
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
     ports:
       - "15672:15672"
@@ -22,18 +28,16 @@ services:
       - mongodb_data:/data/db
 
   rabbitmq-consumer:
-    image: python:3.11.15-slim
-    working_dir: /app
-    volumes:
-      - ./rabbitmq_consumer/.:/app
+    build: ./rabbitmq_consumer
     environment:
       RABBITMQ_DEFAULT_USER: user  
       RABBITMQ_DEFAULT_PASS: "Jksy2828!!"
-    # sh -c는 문자열로 준 명령어를 shell에서 실행하라는 뜻
-    command: sh -c "pip install -r requirements.txt && python consumer.py" 
+      PUSHOVER_TOKEN: ajsqj5bv3zee17c29z5gzhoyqmz2w8
+      PUSHOVER_USER: ukwcz2buto4x3zrmfoffnregy4c27n
     restart: unless-stopped
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   mongodb_data:

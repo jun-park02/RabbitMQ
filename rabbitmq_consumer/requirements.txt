@@ -1,2 +1,2 @@
 pika
-python-dotenv
+requests
