@@ -2,6 +2,7 @@ import pika
 import os
 import sys
 import requests
+import json
 
 def send_pushover_notification(message):
     token = os.getenv("PUSHOVER_TOKEN")
@@ -17,7 +18,8 @@ def send_pushover_notification(message):
 
 
 def callback(ch, method, properties, body):
-    message = body.decode()
+    event = json.loads(body.decode("utf-8"))
+    message = event["content"]
 
     print(f"[RabbitMQ Container Received] : {message}")
 
