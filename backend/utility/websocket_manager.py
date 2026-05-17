@@ -37,19 +37,19 @@ class ConnectionManager:
             return False
         
         disconnected = []
+        sent_count = 0
 
         for websocket in connections:
             try:
                 await websocket.send_json(payload)
+                sent_count += 1
             except Exception:
                 disconnected.append(websocket)
 
-        
         for websocket in disconnected:
             self.disconnect(user_id, websocket)
-
         
-        return len(disconnected) < len(connections)
+        return sent_count > 0
     
 manager = ConnectionManager()
 

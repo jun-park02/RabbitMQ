@@ -9,6 +9,7 @@ class MessageCreateRequest(BaseModel):
 
 class MessageResponse(BaseModel):
     message_id: UUID
+    room_id: str
     sender_id: str
     receiver_id: str
     message: str
